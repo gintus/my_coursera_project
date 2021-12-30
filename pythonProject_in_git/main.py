@@ -1,2 +1,22 @@
-import urllib.request
-urllib.request.urlretrieve("https://d3c33hcgiwev3.cloudfront.net/abhM6dA4EeWi0Q60YgYqQQ.processed/full/720p/index.webm?Expires=1640822400&Signature=SV93lY6LmgmJpdKxI0-s763TG3DhMkSW2n7me8j2a91EPPzSfCY9DnzrLwjE~nXoTFzGmhQ6J5ZcdUOyU0GjIFCNh7XyT2z9eDAgiFvE2C0RC28fQHqc9JU4ouPyvH3Ce~bvbELDQQSTT2kBA~P7BFkkwkiaEn09I06mGrlWHvw_&Key-Pair-Id=APKAJLTNE6QMUY6HBC5A", 'video_name.mp4')
+import functools
+
+listas = [
+    {"vardas": "martynas"},
+    {"vardas": "jonas"}
+]
+
+
+b = {"martynas": "jason", "jonas": "jablonskis"}
+def funkcija(zodynas, b):
+
+
+
+    id = zodynas["vardas"]
+    temp_file = b[id]
+    zodynas["pavarde"] = temp_file
+    return zodynas
+
+
+naujas_zodynas = map(functools.partial(funkcija, b=b), listas)
+print(list(naujas_zodynas))
+a = 1
