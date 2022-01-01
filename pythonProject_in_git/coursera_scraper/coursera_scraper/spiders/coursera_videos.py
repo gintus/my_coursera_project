@@ -52,12 +52,14 @@ class CourseraVideosSpider(scrapy.Spider):
         "OptanonConsent": "isIABGlobal=true&datestamp=Mon+Dec+06+2021+22%3A34%3A35+GMT%2B0200+(Eastern+European+Standard+Time)&version=6.10.0&landingPath=NotLandingPage&groups=C0004%3A0%2CC0003%3A0%2CC0002%3A0%2CC0001%3A1&hosts=H3%3A0%2CH4%3A0%2CH49%3A0%2CH5%3A0%2CH6%3A0%2CH7%3A0%2CH8%3A0%2CH9%3A0%2CH10%3A0%2CH11%3A0%2CH12%3A0%2Cnpf%3A0%2CH13%3A0%2CH14%3A0%2CH15%3A0%2CH16%3A0%2CH17%3A0%2CH18%3A0%2CH53%3A0%2CH54%3A0%2CH19%3A0%2CH20%3A0%2CH21%3A0%2CH55%3A0%2CH22%3A0%2CH23%3A0%2CH47%3A0%2CH24%3A0%2CH25%3A0%2CH26%3A0%2CH27%3A0%2CH28%3A0%2CH29%3A0%2CH30%3A0%2CH31%3A0%2CH32%3A0%2CH33%3A0%2CH34%3A0%2CH35%3A0%2CH36%3A0%2Ccsg%3A0%2CH37%3A0%2Cebp%3A0%2Clit%3A0%2CH38%3A0%2CH39%3A0%2CH52%3A0%2CH40%3A0%2CH45%3A0%2CH56%3A1%2CH57%3A1&geolocation=LT%3BVL&AwaitingReconsent=false",
         "__400vt": "1638824188191",
     }
-    course_slug = "python-data-analysis"
-    # course_slug = "html-css-javascript-for-web-developers"
+    # course_slug = "python-data-analysis"
+    course_slug = "html-css-javascript-for-web-developers"
+    video_quality = "540"
+    # video_quality = "720"
     start_url = "https://www.coursera.org/api/onDemandCourseMaterials.v2/?q=slug&slug={}&includes=modules%2Clessons%2CpassableItemGroups%2CpassableItemGroupChoices%2CpassableLessonElements%2Citems%2Ctracks%2CgradePolicy%2CgradingParameters&fields=moduleIds%2ConDemandCourseMaterialModules.v1(name%2Cslug%2Cdescription%2CtimeCommitment%2ClessonIds%2Coptional%2ClearningObjectives)%2ConDemandCourseMaterialLessons.v1(name%2Cslug%2CtimeCommitment%2CelementIds%2Coptional%2CtrackId)%2ConDemandCourseMaterialPassableItemGroups.v1(requiredPassedCount%2CpassableItemGroupChoiceIds%2CtrackId)%2ConDemandCourseMaterialPassableItemGroupChoices.v1(name%2Cdescription%2CitemIds)%2ConDemandCourseMaterialPassableLessonElements.v1(gradingWeight%2CisRequiredForPassing)%2ConDemandCourseMaterialItems.v2(name%2Cslug%2CtimeCommitment%2CcontentSummary%2CisLocked%2ClockableByItem%2CitemLockedReasonCode%2CtrackId%2ClockedStatus%2CitemLockSummary)%2ConDemandCourseMaterialTracks.v1(passablesCount)%2ConDemandGradingParameters.v1(gradedAssignmentGroups)&showLockedItems=true"
     start_urls = ["coursera.org/"]
-    i_am_testing = "not testing"
-    # i_am_testing = "downloading_videos"
+    # i_am_testing = "not testing"
+    i_am_testing = "downloading_videos"
     # params = {
     #     'q': 'slug',
     #     'slug': 'html-css-javascript-for-web-developers',
@@ -78,7 +80,7 @@ class CourseraVideosSpider(scrapy.Spider):
             with open('all_lessons_dict.json') as f:
                 data = json.load(f)
             data_dict = json.loads(data)
-            self.download_files(data_dict, "testing HTML CSS and Javascript for Web Developers")
+            self.download_files(data_dict, "testing HTML CSS and Javascript for Web Developers", self.video_quality)
 
     def parse_course_structure(self, response):
         course_info = json.loads(response.text)
@@ -191,8 +193,16 @@ class CourseraVideosSpider(scrapy.Spider):
                 if api_response:
                     get_dict = json.loads(api_response.text)
                     # VIDEO RESOLUTION HERE
-                    high_res_vid_url = jmespath.search('linked."onDemandVideos.v1"[0].sources.byResolution."240p".webMVideoUrl', get_dict)
-                    all_lessons_dict[lesson["week"]][lesson["segment_file_name"]].update({"item_" + str(index + 1) + "_" + lesson["lesson_file_name"]: high_res_vid_url})
+                    vid_720p_url = jmespath.search('linked."onDemandVideos.v1"[0].sources.byResolution."720p".webMVideoUrl', get_dict)
+                    vid_540p_url = jmespath.search('linked."onDemandVideos.v1"[0].sources.byResolution."540p".webMVideoUrl', get_dict)
+                    vid_360p_url = jmespath.search('linked."onDemandVideos.v1"[0].sources.byResolution."360p".webMVideoUrl', get_dict)
+                    vid_240p_url = jmespath.search('linked."onDemandVideos.v1"[0].sources.byResolution."240p".webMVideoUrl', get_dict)
+                    all_lessons_dict[lesson["week"]][lesson["segment_file_name"]].update({"item_" + str(index + 1) + "_" + lesson["lesson_file_name"]: {
+                        "vid_720p_url": vid_720p_url,
+                        "vid_540p_url": vid_540p_url,
+                        "vid_360p_url": vid_360p_url,
+                        "vid_240p_url": vid_240p_url,
+                    }})
                 else:
                     all_lessons_dict[lesson["week"]][lesson["segment_file_name"]].update({"item_" + str(index + 1) + "_" + lesson["lesson_file_name"]: "failed to get"})
                 time.sleep(3)
@@ -205,18 +215,32 @@ class CourseraVideosSpider(scrapy.Spider):
             json.dump(data_dict_string, f, ensure_ascii=False, indent=4)
 
     @staticmethod
-    def download_files(data_dict, course_name):
+    def download_files(data_dict, course_name, video_quality):
+        video_quality_file_name = None
+        video_quality_list = ["vid_720p_url", "vid_540p_url", "vid_360p_url", "vid_240p_url"]
+        for video in video_quality_list:
+            if video_quality in video:
+                video_quality_file_name = video
+                break
+        if not video_quality_file_name:
+            print("wrong video format, function terminated")
+            return
         os.mkdir(course_name)
         for week_name, values in data_dict.items():
             print(" *************** starting " + week_name + " ***************")
             week_directory = course_name + "/" + week_name
             os.mkdir(week_directory)
             for segment_name, lessons in values.items():
-                print(" *************** starting " + segment_name + " ***************")
+                print("--------- starting " + segment_name + " ---------")
                 temp_directory = week_directory + "/" + segment_name
                 os.mkdir(temp_directory)
-                for video_name, video_url in lessons.items():
-                    print(" *************** downloading video " + video_name + " ***************")
-                    urllib.request.urlretrieve(video_url, temp_directory + "/" + video_name + '.mp4')
-                    print(" *************** finished video " + video_name + " ***************")
+                for video_name, video_urls in lessons.items():
+                    print("! downloading video " + video_name + " !")
+                    video_url = video_urls[video_quality_file_name]
+                    final_video_name = video_name + "_" + str(video_quality) + "p" + ".mp4"
+                    urllib.request.urlretrieve(video_url, temp_directory + "/" + final_video_name)
+                    print(" !! finished video " + video_name + " !!")
                     time.sleep(10)
+                print("--------- finished " + segment_name + " ---------")
+            print(" *************** finished " + week_name + " ***************")
+        print("@@@@@@@@@@@@@@ spider finished @@@@@@@@@@@@@@")
